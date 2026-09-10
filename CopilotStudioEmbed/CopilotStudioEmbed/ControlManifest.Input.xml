@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <control namespace="MSPFE2019" constructor="CopilotStudioEmbed" version="0.0.1" display-name-key="CopilotStudioEmbed" description-key="Embeds a Microsoft Copilot Studio agent inside a Canvas Power App via Direct Line token endpoint." control-type="standard" >
+    <!--
+      NOTE ON control-type: This control is implemented internally as a self-contained React application
+      (React + ReactDOM + botframework-webchat are all bundled together and mounted once into the container div).
+      We intentionally use control-type="standard" rather than "virtual" here: PCF "virtual" controls render
+      through the platform-supplied React instance (via <platform-library> aliasing), and botframework-webchat
+      ships/depends on its own React tree internals. Mixing a platform-provided React instance with WebChat's
+      bundled React would risk "Invalid Hook Call" errors from having two different React copies in the same
+      component tree. Bundling our own React/ReactDOM copy under a "standard" control and mounting it once
+      avoids that class of bug entirely while still being a 100% React-based implementation.
+    -->
+    <external-service-usage enabled="true">
+      <!--
+        Copilot Studio's Direct Line token endpoint domain(s). The control fetches the connectionString/tokenEndpoint
+        URL supplied by the maker, which resolves to one of these Azure-hosted domains. Both are allow-listed
+        because different Copilot Studio provisioning regions/generations use either domain.
+      -->
+      <domain>directline.botframework.com</domain>
+      <domain>powerva.microsoft.com</domain>
+    </external-service-usage>
+
+    <property name="connectionString"
+              display-name-key="Connection String (Token Endpoint URL)"
+              description-key="The Direct Line token endpoint URL copied from Copilot Studio > Channels > Mobile app or Custom website (e.g. https://xxxxx.environment.api.powerplatform.com/powervirtualagents/... or https://directline.botframework.com/...). This is NOT the raw Direct Line secret."
+              of-type="SingleLine.Text"
+              usage="bound"
+              required="true" />
+
+    <property name="botName"
+              display-name-key="Bot Display Name"
+              description-key="Optional display name shown in the chat header."
+              of-type="SingleLine.Text"
+              usage="bound"
+              required="false" />
+
+    <property name="accentColor"
+              display-name-key="Accent Color"
+              description-key="Optional hex color (e.g. #464775) used to theme the chat's send box and user message bubbles."
+              of-type="SingleLine.Text"
+              usage="bound"
+              required="false" />
+
+    <property name="showTypingIndicator"
+              display-name-key="Show Typing Indicator"
+              description-key="Whether to show a typing indicator while the bot is composing a response."
+              of-type="TwoOptions"
+              usage="bound"
+              required="false"
+              default-value="1" />
+
+    <resources>
+      <code path="index.ts" order="1"/>
+      <css path="css/CopilotStudioEmbed.css" order="1" />
+    </resources>
+  </control>
+</manifest>

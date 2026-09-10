@@ -1,0 +1,22 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Node
+node_modules/
+npm-debug.log*
+
+# PCF generated / build output
+**/generated/
+out/
+bin/
+obj/
+*.binlog
+
+# Solution packaging output
+CopilotStudioEmbedSolution/bin/
+CopilotStudioEmbedSolution/obj/
+
+# Editor / OS
+.vs/
+.vscode/
+.DS_Store
+Thumbs.db

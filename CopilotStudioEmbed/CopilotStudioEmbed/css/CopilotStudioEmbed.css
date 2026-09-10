@@ -1,0 +1,54 @@
+.mspfe-copilot-embed-root {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  position: relative;
+  font-family: "Segoe UI", "Segoe UI Web (West European)", Tahoma, Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.mspfe-copilot-embed-webchat {
+  width: 100%;
+  height: 100%;
+}
+
+.mspfe-copilot-embed-status {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #323130;
+  text-align: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.mspfe-copilot-embed-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #464775;
+  animation: mspfe-copilot-embed-spin 0.8s linear infinite;
+}
+
+@keyframes mspfe-copilot-embed-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mspfe-copilot-embed-error {
+  color: #a4262c;
+  font-size: 13px;
+  max-width: 420px;
+  white-space: pre-wrap;
+}
+
+.mspfe-copilot-embed-error-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
