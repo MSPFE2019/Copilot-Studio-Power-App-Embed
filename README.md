@@ -10,7 +10,7 @@ A [Power Apps Component Framework (PCF)](https://learn.microsoft.com/power-apps/
 
 1. Takes a single required property, **`connectionString`** — the Direct Line **token endpoint URL** from Copilot Studio's *Mobile app* or *Custom website* channel.
 2. `GET`s that URL, which returns a short-lived JSON payload: `{ "token": "...", "conversationId": "...", "expires_in": 3600 }`.
-3. Uses that token to create a `DirectLine` connection (`botframework-webchat`'s `createDirectLine`) and renders `<ReactWebChat directLine={...} />`.
+3. Uses that token to create a `DirectLine` connection via `botframework-directlinejs` and renders the lighter `botframework-webchat/component.js` `<ReactWebChat directLine={...} />` component.
 4. Automatically re-fetches a new token before the current one expires (and reactively if a `directline/expiredtoken` / failed-connection status is observed), so long-running conversations in a canvas app session keep working.
 
 ### Architecture
@@ -25,7 +25,7 @@ Canvas Power App (screen)
        └─ directLineTokenClient.ts → fetch() wrapper around the Copilot Studio token endpoint
 ```
 
-Everything (React, ReactDOM, `botframework-webchat`) is **bundled into the control's `bundle.js`** by `pcf-scripts` (webpack) — there are no `<script src="https://...">` CDN tags anywhere, because Canvas apps sandbox PCF controls and disallow loading external script tags at runtime.
+Everything (React, ReactDOM, `botframework-webchat/component.js`, and `botframework-directlinejs`) is **bundled into the control's `bundle.js`** by `pcf-scripts` (webpack) — there are no `<script src="https://...">` CDN tags anywhere, because Canvas apps sandbox PCF controls and disallow loading external script tags at runtime.
 
 > **Why `control-type="standard"` instead of `"virtual"`?** PCF "virtual" controls render through a platform-supplied React instance (declared via `<platform-library>` in the manifest) so multiple virtual controls on the same screen can share one React runtime. `botframework-webchat` bundles a large, tightly-coupled React component tree of its own. Forcing it to run against a *different* React instance than the one it was compiled against is exactly the "two copies of React" situation that causes `Invalid Hook Call` errors. To avoid that entire class of bug, this control bundles its own single, self-consistent copy of React/ReactDOM and mounts it once into the container `div` that a `"standard"` control receives — the implementation is still 100% React internally (see `ChatApp.tsx`), it just isn't wired through PCF's virtual-control React bridge.
 
@@ -86,12 +86,13 @@ Container **height/width** are handled automatically by PCF sizing (`context.mod
 ```powershell
 cd CopilotStudioEmbed
 npm install
-npm run build          # produces out/controls/CopilotStudioEmbed/bundle.js
+npm run build          # production build; produces out/controls/CopilotStudioEmbed/bundle.js
+npm run build:dev      # optional development/debug build; not suitable for solution import
 npm run start:watch     # launches the PCF test harness in a browser at http://localhost:8181
                          # paste a real token endpoint URL into the "connectionString" input to test live
 ```
 
-`npm run build` runs manifest validation, ESLint, and the webpack bundle (TypeScript + React + `botframework-webchat`, ~13 MB unminified dev bundle / smaller once built in production mode via `npm run build -- --buildMode production` or `pac pcf push`, which builds for release).
+`npm run build` runs manifest validation, ESLint, and a production webpack bundle (TypeScript + React + the lighter WebChat component entrypoint). The production bundle is kept below Dataverse's custom-control web resource size limit. `npm run build:dev` creates an unminified debug bundle and should not be packed into an importable Dataverse solution.
 
 ---
 
@@ -113,6 +114,19 @@ msbuild /t:build /restore
 #   a) Import directly: pac auth create --url https://<yourorg>.crm.dynamics.com
 #      pac solution import --path bin\Debug\CopilotStudioEmbedSolution.zip
 #   b) Or import via the Power Apps maker portal: Solutions > Import solution.
+```
+
+If Visual Studio Build Tools are not available, you can pack directly with `pac solution pack` after copying the built PCF output into the unpacked solution folder:
+
+```powershell
+cd ..
+Remove-Item CopilotStudioEmbedSolution\src\Controls\MSPFE2019.CopilotStudioEmbed -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path CopilotStudioEmbedSolution\src\Controls\MSPFE2019.CopilotStudioEmbed
+Copy-Item CopilotStudioEmbed\out\controls\CopilotStudioEmbed\* CopilotStudioEmbedSolution\src\Controls\MSPFE2019.CopilotStudioEmbed -Recurse -Force
+
+cd CopilotStudioEmbedSolution
+pac solution pack --zipfile bin\Release\CopilotStudioEmbedSolution_1_0_2_0.zip --folder src --packagetype Unmanaged
+pac solution pack --zipfile bin\Release\CopilotStudioEmbedSolution_1_0_2_0_managed.zip --folder src --packagetype Managed
 ```
 
 Alternative fast-iteration path while developing against a real environment (no full solution zip needed for every change):
@@ -147,9 +161,9 @@ pac pcf push --publisher-prefix mspfe
 
 - **No `localStorage`/`sessionStorage`.** PCF code components running in Canvas apps are sandboxed and [must not use web storage APIs](https://learn.microsoft.com/power-apps/developer/component-framework/limitations). This control does not use them, and disables the WebChat upload button (`hideUploadButton: true`) to avoid pulling in WebChat features that assume browser storage/file APIs are available.
 - **Token refresh starts a new conversation.** Copilot Studio's token endpoint mints a fresh `conversationId` on every call. This control re-fetches from the same `connectionString` both proactively (at ~80% of the token's `expires_in`) and reactively (on an expired-token / failed-connection status from Direct Line), but because there's no true Direct Line `token/refresh` support against Copilot Studio's endpoint, each reconnect begins a **new** conversation rather than resuming transcript history mid-conversation. For most embedded-assistant scenarios this is an acceptable trade-off (better than a broken/stuck chat); if you need long-lived (>1 hr) uninterrupted single conversations, consider fronting the token endpoint with your own service that supports Direct Line's `POST /v3/directline/tokens/refresh`.
-- **Iframe / CSP constraints.** As with any PCF control hosted in Canvas apps (which render inside iframes with a restrictive Content Security Policy), the control's only outbound network calls are `fetch()` to the domains declared in `<external-service-usage>` in the manifest (`directline.botframework.com`, `powerva.microsoft.com`) plus the Direct Line WebSocket stream itself. If your Copilot Studio environment uses a different token endpoint domain, add it to `ControlManifest.Input.xml`'s `<external-service-usage>` block and rebuild.
-- **Bundle size.** `botframework-webchat` is a large dependency; the unminified dev build is ~13 MB. Production builds (`npm run build -- --buildMode production` or `pac pcf push`) minify the bundle, which reduces this significantly, but it's still a heavier control than a typical field-bound PCF control — expect a brief blank/spinner period on first paint while `bundle.js` downloads and parses.
-- **No solution build verification in this environment.** `npm run build` (TypeScript + ESLint + webpack) was verified to succeed. Packaging the Dataverse solution (`msbuild` against `CopilotStudioEmbedSolution.cdsproj`) requires Visual Studio Build Tools with the Power Platform workload (or a CI runner such as GitHub Actions using `microsoft/powerplatform-actions`), which was not available in the environment this project was scaffolded in — the solution project structure was generated via the official `pac solution init` / `pac solution add-reference` commands and follows the standard pattern, but end-to-end packaging should be verified once run on a machine/CI with msbuild installed.
+- **Iframe / CSP constraints.** As with any PCF control hosted in Canvas apps (which render inside iframes with a restrictive Content Security Policy), the control's only outbound network calls are `fetch()` to the domains declared in `<external-service-usage>` in the manifest (`directline.botframework.com`, `powerva.microsoft.com`, `environment.api.powerplatform.com`, `api.powerplatform.com`) plus the Direct Line WebSocket stream itself. If your Copilot Studio environment uses a different token endpoint domain, add it to `ControlManifest.Input.xml`'s `<external-service-usage>` block and rebuild.
+- **Bundle size.** `botframework-webchat` is a large dependency; debug builds exceed Dataverse custom-control web resource limits and must not be packed for import. `npm run build` uses production mode by default and imports the lighter `botframework-webchat/component.js` entrypoint, producing a bundle around 4 MB. It is still heavier than a typical field-bound PCF control, so expect a brief blank/spinner period on first paint while `bundle.js` downloads and parses.
+- **Solution packaging.** `npm run build` (TypeScript + ESLint + webpack) and direct `pac solution pack` packaging were verified to succeed. Packaging via `msbuild` against `CopilotStudioEmbedSolution.cdsproj` requires Visual Studio Build Tools with the Power Platform workload; use the direct `pac solution pack` path above on machines without VS Build Tools.
 
 ---
 

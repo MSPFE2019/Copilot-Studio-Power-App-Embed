@@ -1,9 +1,10 @@
 {
   "name": "pcf-project",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Project containing your PowerApps Component Framework (PCF) control.",
   "scripts": {
-    "build": "pcf-scripts build",
+    "build": "pcf-scripts build --buildMode production",
+    "build:dev": "pcf-scripts build",
     "clean": "pcf-scripts clean",
     "lint": "pcf-scripts lint",
     "lint:fix": "pcf-scripts lint fix",
@@ -13,6 +14,7 @@
     "refreshTypes": "pcf-scripts refreshTypes"
   },
   "dependencies": {
+    "botframework-directlinejs": "^0.15.8",
     "botframework-webchat": "^4.19.1",
     "react": "^16.14.0",
     "react-dom": "^16.14.0"

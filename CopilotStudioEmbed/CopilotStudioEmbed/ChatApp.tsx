@@ -1,5 +1,6 @@
 import * as React from "react";
-import ReactWebChat, { createDirectLine } from "botframework-webchat";
+import { DirectLine } from "botframework-directlinejs";
+import { ReactWebChat } from "botframework-webchat/component.js";
 import { DirectLineTokenResponse, fetchDirectLineToken, TokenEndpointError } from "./directLineTokenClient";
 
 export interface ChatAppProps {
@@ -12,7 +13,7 @@ export interface ChatAppProps {
 type LoadState =
     | { kind: "loading" }
     | { kind: "error"; message: string }
-    | { kind: "ready"; directLine: ReturnType<typeof createDirectLine>; sessionKey: number };
+    | { kind: "ready"; directLine: DirectLine; sessionKey: number };
 
 // Refresh proactively at 80% of the token's lifetime; Copilot Studio's default token
 // lifetime is ~1 hour (3600s), so this defaults to a 48 minute refresh cadence if the
@@ -58,7 +59,7 @@ export const ChatApp: React.FC<ChatAppProps> = (props) => {
                 return;
             }
 
-            const directLine = createDirectLine({
+            const directLine = new DirectLine({
                 token: tokenResponse.token,
                 conversationId: tokenResponse.conversationId,
                 streamUrl: tokenResponse.streamUrl

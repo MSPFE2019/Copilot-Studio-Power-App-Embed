@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="MSPFE2019" constructor="CopilotStudioEmbed" version="1.0.1" display-name-key="CopilotStudioEmbed" description-key="Embeds a Microsoft Copilot Studio agent inside a Canvas Power App via Direct Line token endpoint." control-type="standard" >
+  <control namespace="MSPFE2019" constructor="CopilotStudioEmbed" version="1.0.2" display-name-key="CopilotStudioEmbed" description-key="Embeds a Microsoft Copilot Studio agent inside a Canvas Power App via Direct Line token endpoint." control-type="standard" >
     <!--
       NOTE ON control-type: This control is implemented internally as a self-contained React application
       (React + ReactDOM + botframework-webchat are all bundled together and mounted once into the container div).
@@ -19,6 +19,8 @@
       -->
       <domain>directline.botframework.com</domain>
       <domain>powerva.microsoft.com</domain>
+      <domain>environment.api.powerplatform.com</domain>
+      <domain>api.powerplatform.com</domain>
     </external-service-usage>
 
     <property name="connectionString"
