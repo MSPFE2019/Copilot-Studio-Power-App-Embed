@@ -6,3 +6,7 @@
 
 # MSBuild Binary and Structured Log
 *.binlog
+
+# PCF control build output copied in for local `pac solution pack` packaging
+# (regenerated from CopilotStudioEmbed/out via `npm run build`; not committed)
+/src/Controls/
