@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="MSPFE2019" constructor="CopilotStudioEmbed" version="0.0.1" display-name-key="CopilotStudioEmbed" description-key="Embeds a Microsoft Copilot Studio agent inside a Canvas Power App via Direct Line token endpoint." control-type="standard" >
+  <control namespace="MSPFE2019" constructor="CopilotStudioEmbed" version="1.0.1" display-name-key="CopilotStudioEmbed" description-key="Embeds a Microsoft Copilot Studio agent inside a Canvas Power App via Direct Line token endpoint." control-type="standard" >
     <!--
       NOTE ON control-type: This control is implemented internally as a self-contained React application
       (React + ReactDOM + botframework-webchat are all bundled together and mounted once into the container div).
@@ -37,7 +37,7 @@
 
     <property name="accentColor"
               display-name-key="Accent Color"
-              description-key="Optional hex color (e.g. #464775) used to theme the chat's send box and user message bubbles."
+              description-key="Optional hex color (e.g. #464775) used to theme the chat send box and user message bubbles."
               of-type="SingleLine.Text"
               usage="bound"
               required="false" />
