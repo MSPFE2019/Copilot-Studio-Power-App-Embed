@@ -43,7 +43,7 @@ The **`connectionString`** property is *not* a Direct Line secret and *not* the 
    https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.30.environment.api.powerplatform.com/powervirtualagents/botsbyschema/xxxxxxxx/directline/token?api-version=2022-03-01-preview
    ```
    (Exact host/path varies by region and Copilot Studio generation, but it always resolves to a domain under `powerva.microsoft.com`, `powerplatform.com`, or `directline.botframework.com`.)
-5. Paste that URL into the control's **`connectionString`** property (either as a static value or bound to a Power Fx expression, e.g. reading it from an environment variable / a Dataverse setting so it isn't hard-coded per app).
+5. Paste that URL into the control's **`connectionString`** input property (either as a static value or bound to a Power Fx expression, e.g. reading it from an environment variable / a Dataverse setting so it isn't hard-coded per app).
 
 Do **not** paste your agent's Direct Line **secret** here — this control never sends a secret, only calls the public token endpoint that itself hands back a scoped, time-limited token.
 
@@ -72,10 +72,10 @@ CopilotStudioEmbedSolution/         Dataverse solution project (pac solution ini
 
 | Property               | Type          | Usage | Required | Description |
 |-------------------------|---------------|-------|----------|-------------|
-| `connectionString`      | Single line of text | bound | ✅ | The Copilot Studio Direct Line **token endpoint URL** (see §2). |
-| `botName`               | Single line of text | bound | optional | Display name shown while connecting and used for the bot avatar initials. |
-| `accentColor`           | Single line of text | bound | optional | Hex color (e.g. `#464775`) used to theme WebChat's accent (send box, user bubbles). |
-| `showTypingIndicator`   | Two options (bool) | bound | optional | Show/hide the typing indicator bubble. Defaults to `true`. |
+| `connectionString`      | Single line of text | input | ✅ | The Copilot Studio Direct Line **token endpoint URL** (see §2). |
+| `botName`               | Single line of text | input | optional | Display name shown while connecting and used for the bot avatar initials. |
+| `accentColor`           | Single line of text | input | optional | Hex color (e.g. `#464775`) used to theme WebChat's accent (send box, user bubbles). |
+| `showTypingIndicator`   | Two options (bool) | input | optional | Show/hide the typing indicator bubble. Defaults to `true`. |
 
 Container **height/width** are handled automatically by PCF sizing (`context.mode.trackContainerResize(true)`); size the control on the canvas screen like any other control.
 
@@ -125,8 +125,8 @@ New-Item -ItemType Directory -Force -Path CopilotStudioEmbedSolution\src\Control
 Copy-Item CopilotStudioEmbed\out\controls\CopilotStudioEmbed\* CopilotStudioEmbedSolution\src\Controls\MSPFE2019.CopilotStudioEmbed -Recurse -Force
 
 cd CopilotStudioEmbedSolution
-pac solution pack --zipfile bin\Release\CopilotStudioEmbedSolution_1_0_2_0.zip --folder src --packagetype Unmanaged
-pac solution pack --zipfile bin\Release\CopilotStudioEmbedSolution_1_0_2_0_managed.zip --folder src --packagetype Managed
+pac solution pack --zipfile bin\Release\CopilotStudioEmbedSolution_1_0_3_0.zip --folder src --packagetype Unmanaged
+pac solution pack --zipfile bin\Release\CopilotStudioEmbedSolution_1_0_3_0_managed.zip --folder src --packagetype Managed
 ```
 
 Alternative fast-iteration path while developing against a real environment (no full solution zip needed for every change):
@@ -142,7 +142,7 @@ pac pcf push --publisher-prefix mspfe
 ### Adding the control to a Canvas app
 
 1. In the target environment, open (or create) your Canvas app in Power Apps Studio.
-2. **Insert > Get more components > Code** (or **Import components**), select the imported `CopilotStudioEmbed` control, and add it to a screen.
+2. **Insert > Get more components > Code**, select the imported `CopilotStudioEmbed` control, and then select **Import**. If you do not see the **Code** tab, ask an environment admin to enable **Power Apps component framework for canvas apps** in **Power Platform admin center > Environments > [environment] > Settings > Product > Features**.
 3. Set the `ConnectionString` property to the token endpoint URL from §2 (store it in a variable/data source rather than hard-coding it if you plan to reuse the app across environments).
 4. Optionally set `BotName`, `AccentColor`, `ShowTypingIndicator`.
 5. Save & publish the app.
@@ -162,7 +162,7 @@ pac pcf push --publisher-prefix mspfe
 - **No `localStorage`/`sessionStorage`.** PCF code components running in Canvas apps are sandboxed and [must not use web storage APIs](https://learn.microsoft.com/power-apps/developer/component-framework/limitations). This control does not use them, and disables the WebChat upload button (`hideUploadButton: true`) to avoid pulling in WebChat features that assume browser storage/file APIs are available.
 - **Token refresh starts a new conversation.** Copilot Studio's token endpoint mints a fresh `conversationId` on every call. This control re-fetches from the same `connectionString` both proactively (at ~80% of the token's `expires_in`) and reactively (on an expired-token / failed-connection status from Direct Line), but because there's no true Direct Line `token/refresh` support against Copilot Studio's endpoint, each reconnect begins a **new** conversation rather than resuming transcript history mid-conversation. For most embedded-assistant scenarios this is an acceptable trade-off (better than a broken/stuck chat); if you need long-lived (>1 hr) uninterrupted single conversations, consider fronting the token endpoint with your own service that supports Direct Line's `POST /v3/directline/tokens/refresh`.
 - **Iframe / CSP constraints.** As with any PCF control hosted in Canvas apps (which render inside iframes with a restrictive Content Security Policy), the control's only outbound network calls are `fetch()` to the domains declared in `<external-service-usage>` in the manifest (`directline.botframework.com`, `powerva.microsoft.com`, `environment.api.powerplatform.com`, `api.powerplatform.com`) plus the Direct Line WebSocket stream itself. If your Copilot Studio environment uses a different token endpoint domain, add it to `ControlManifest.Input.xml`'s `<external-service-usage>` block and rebuild.
-- **Bundle size.** `botframework-webchat` is a large dependency; debug builds exceed Dataverse custom-control web resource limits and must not be packed for import. `npm run build` uses production mode by default and imports the lighter `botframework-webchat/component.js` entrypoint, producing a bundle around 4 MB. It is still heavier than a typical field-bound PCF control, so expect a brief blank/spinner period on first paint while `bundle.js` downloads and parses.
+- **Bundle size.** `botframework-webchat` is a large dependency; debug builds exceed Dataverse custom-control web resource limits and must not be packed for import. `npm run build` uses production mode by default and imports the lighter `botframework-webchat/component.js` entrypoint, producing a bundle around 4 MB. It is still heavier than a typical PCF control, so expect a brief blank/spinner period on first paint while `bundle.js` downloads and parses.
 - **Solution packaging.** `npm run build` (TypeScript + ESLint + webpack) and direct `pac solution pack` packaging were verified to succeed. Packaging via `msbuild` against `CopilotStudioEmbedSolution.cdsproj` requires Visual Studio Build Tools with the Power Platform workload; use the direct `pac solution pack` path above on machines without VS Build Tools.
 
 ---

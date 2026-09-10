@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="MSPFE2019" constructor="CopilotStudioEmbed" version="1.0.2" display-name-key="CopilotStudioEmbed" description-key="Embeds a Microsoft Copilot Studio agent inside a Canvas Power App via Direct Line token endpoint." control-type="standard" >
+  <control namespace="MSPFE2019" constructor="CopilotStudioEmbed" version="1.0.3" display-name-key="CopilotStudioEmbed" description-key="Embeds a Microsoft Copilot Studio agent inside a Canvas Power App via Direct Line token endpoint." control-type="standard" >
     <!--
       NOTE ON control-type: This control is implemented internally as a self-contained React application
       (React + ReactDOM + botframework-webchat are all bundled together and mounted once into the container div).
@@ -27,30 +27,33 @@
               display-name-key="Connection String (Token Endpoint URL)"
               description-key="The Direct Line token endpoint URL copied from Copilot Studio > Channels > Mobile app or Custom website (e.g. https://xxxxx.environment.api.powerplatform.com/powervirtualagents/... or https://directline.botframework.com/...). This is NOT the raw Direct Line secret."
               of-type="SingleLine.Text"
-              usage="bound"
-              required="true" />
+              usage="input"
+              required="true"
+              pfx-default-value="&quot;&quot;" />
 
     <property name="botName"
               display-name-key="Bot Display Name"
               description-key="Optional display name shown in the chat header."
               of-type="SingleLine.Text"
-              usage="bound"
-              required="false" />
+              usage="input"
+              required="false"
+              pfx-default-value="&quot;Copilot Studio&quot;" />
 
     <property name="accentColor"
               display-name-key="Accent Color"
               description-key="Optional hex color (e.g. #464775) used to theme the chat send box and user message bubbles."
               of-type="SingleLine.Text"
-              usage="bound"
-              required="false" />
+              usage="input"
+              required="false"
+              pfx-default-value="&quot;#464775&quot;" />
 
     <property name="showTypingIndicator"
               display-name-key="Show Typing Indicator"
               description-key="Whether to show a typing indicator while the bot is composing a response."
               of-type="TwoOptions"
-              usage="bound"
+              usage="input"
               required="false"
-              default-value="1" />
+              pfx-default-value="true" />
 
     <resources>
       <code path="index.ts" order="1"/>
